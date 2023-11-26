@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Movie Demo</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-aFq/bzH65dt+w6FI2ooMVUpc+21e0SRygnTpmBvdBgSdnuTN7QbdgL+OapgHtvPp" crossorigin="anonymous">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="bg-dark mx-2">
+
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark ms-5 mt-2">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#"><img src="img/logo.png" alt="logo" width="200px"></a>
+
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item ps-2">
+            <a class="nav-link active" aria-current="page" href="index.html">Home</a>
+          </li>
+          <li class="nav-item ps-2">
+            <a class="nav-link" href="search.html">Serach</a>
+          </li>
+          <li class="nav-item ps-2">
+            <a class="nav-link" href="playlist.html">Playlist</a>
+          </li>
+          
+          <li class="nav-item ">
+
+            <div class="container">
+              <div class="row justify-content-end ">
+                <div class="col-lg-2 col-md-3 col-4">
+
+                  <img src="img/login.png" id="profile" alt="Home" width="100%" onclick="Profile()">
+
+                </div>
+              </div>
+            </div>
+
+          </li>
+        </ul>
+      </div>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+    </div>
+  </nav>
+  <div class="container-fluid">
+    <div class="row">
+        <div class="col" id="center_bar">
+
+          <div class="row p-3 justify-content-center">
+            <div class="col-10 pb-1">
+
+              <input class="form-control me-2" type="search" placeholder="Search" id="search_bar"
+                oninput="delayedSearch()" aria-label="Search">
+            </div>
+            <div class="d-grid gap-2 col-6 mx-auto">
+              <button class="btn btn-dark text-white" onclick="show('info')">
+                Additional Info
+                <span class="ms-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                    class="bi bi-caret-down" viewBox="0 0 16 16">
+                    <path
+                      d="M8 11.293L3.854 7.146a.5.5 0 0 1 .708-.708L8 9.293l3.438-3.437a.5.5 0 1 1 .708.708L8 11.293z" />
+
+                  </svg>
+                </span>
+              </button>
+            </div>
+          </div>
+          <div class="row p-3 justify-content-center d-none" id="info">
+            <div class="col ">
+              <input class="form-control me-2" type="search" placeholder="Artist" id="Artist_bar"
+                oninput="delayedSearch()" aria-label="Search">
+            </div>
+            <div class="col ">
+              <input class="form-control me-2 col" type="search" placeholder="Genre" id="Genre_bar"
+                oninput="delayedSearch()" aria-label="Search">
+
+            </div>
+          </div>
+      <div id="songs" class=" row ">
+        <div class="col">
+          <div id="container-songs" class="row g-4 mt-2 p-4">
+            <div id="card-songs" class="col d-none">
+              <div class="card text-bg-secondary h-100" style="width: 18rem;">
+                <img class="card-img-top" alt="...">
+                <div class="card-body">
+                  <h5 class="card-title"></h5>
+                  <p class="card-text"></p>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="text-bg-secondary d-none  rounded-4 sticky-top" id="side_bar">
+      <div class="row align-items-start ">
+        <div class="col-12 text-center ">
+          <div class="side-bar-content">
+            <div class="row">
+              <div class="col-10">
+                <img class="py-2" id="image" alt="..." width="100%">
+              </div>
+              <div class="col">
+                <img src="img/cross.png" class=" py-2 d-inline-block align-text-top" id="cancel" alt="..." width="100%"
+                  onclick="cross()">
+              </div>
+            </div>
+            <p class="d-none" id="id"></p>
+            <h2 class="pb-2" id="name"></h2>
+            <h3 class="pb-2" id="artist"></h3>
+            <h3 class="pb-2">Listen to preview</h3>
+            <img class="pb-2" src="img/no-music.png" width="10%" alt="" id="preview" >
+            <audio id="audio" controls class="d-none">
+              <source src="" type="audio/ogg">
+              Your browser does not support the audio element.
+            </audio>
+            <div class="dropdown">
+              <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton1"
+                data-bs-toggle="dropdown" aria-expanded="false">
+                add to playlist
+              </button>
+              <button class="btn btn-secondary" type="button" id="sub1" aria-expanded="false" onclick="addSong()">
+                add
+              </button>
+              <ul id="dropdownList" class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                <li></li>
+              </ul>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  </div>
+
+
+
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-qKXV1j0HvMUeCBQ+QVp7JcfGl760yU08IQ+GpUo5hlbpg51QRiuqHAJz8+BrxE/N"
+    crossorigin="anonymous"></script>
+  <script src="menu.js"></script>
+  <script src="lib.js"></script>
+
+
+  <script>
+
+    //getUserPlaylist()
+    //getToken()
+    //getGenres()
+    //getSearch()
+    //playtrack()
+  </script>
+
+
+</body>
+
+</html>
