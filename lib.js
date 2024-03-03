@@ -5,7 +5,7 @@ var url = "https://accounts.spotify.com/api/token";                             
 var data;                                                                       // variable to store data like the genre and searched song                               
 var playlistPub;                                                                //public playlist 
 var isInfoVisible = false;                                                      // Track the state of the element
-
+var playSong = false;
 
 function removeLoader() {
     // Hide the loader element and show the content element
@@ -25,9 +25,11 @@ function isUserLoggedIn() {
     // If userData is not null or undefined, consider the user as logged in
     if (userData === null || userData === undefined) {
         window.location.href = "login.html";
-    } else {
-        playlistPubblicheHome();                                                // Call the function to load public playlists for the logged-in user
     }
+    else {
+        return true;
+    }
+
 }
 
 function getUser() {
@@ -53,15 +55,27 @@ function login() {
         password: password
     }
     //send a post request then save the user's info and go to index page
-    fetch("http://127.0.0.1:3100/login", {
+    fetch("https://tune-hub.it:443/login", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(user)
     })
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 401) {
+                // If the response status is 401, show an alert and return
+                alert('Unauthorized');
+                return null;  // Return null or an appropriate value to indicate no further processing
+            } else {
+                // Otherwise, return the response.json() to process in the next .then block
+                return response.json();
+            }
+        })
         .then(logged_user => {
-            sessionStorage.setItem("user", JSON.stringify(logged_user))
-            window.location.href = "index.html"
+            if (logged_user) {
+                // Only proceed if logged_user is not null
+                sessionStorage.setItem("user", JSON.stringify(logged_user));
+                window.location.href = "index.html";
+            }
         })
 }
 
@@ -106,6 +120,8 @@ function registrati() {
         password2.classList.remove('border');
         password2.classList.remove('border-danger');
 
+    }
+    if (isEmailValid && nome.value.trim() !== '' && !(password1.value != password2.value || password1.value.length < 7)) {
         // Prepare data for registration
         var data = {
             name: nome.value,
@@ -114,7 +130,7 @@ function registrati() {
         };
 
         // Send registration request to the server
-        fetch("http://127.0.0.1:3100/users?apikey=123456", {
+        fetch("https://tune-hub.it:443/users?apikey=123456", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -325,7 +341,7 @@ function sidebar(track) {
     if (previewUrl !== null) {
         document.getElementById("audio").src = track.preview_url;
         document.getElementById("preview").src = "img/play.png";
-        document.getElementById("preview").onclick = "playAudio()";
+        document.getElementById("preview").onclick = playAudio;         //assign the function as the callback
     }
     var song = document.getElementById("songs");
     song.classList.add("d-none");
@@ -336,14 +352,14 @@ function sidebar(track) {
 function playAudio() {
     const audio = document.getElementById("audio");
 
-    if (!isInfoVisible) {
+    if (!playSong) {
         audio.play();
         document.getElementById("preview").src = "img/pause.png";
     } else {
         audio.pause();
         document.getElementById("preview").src = "img/play.png";
     }
-    isInfoVisible = !isInfoVisible;
+    playSong = !playSong;
 }
 
 // Close the sidebar and show the main content
@@ -389,7 +405,7 @@ async function updateUser() {
         };
 
         // Send update request to the server
-        fetch(`http://127.0.0.1:3100/users/${userObj._id}?apikey=123456`, {
+        fetch(`https://tune-hub.it:443/users/${userObj._id}?apikey=123456`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json"
@@ -419,7 +435,7 @@ function logout() {
 }
 
 // Create a new playlist
-function creaPlaylist() {
+function createPlaylist() {
     const userJSON = sessionStorage.getItem("user");
     const userObj = JSON.parse(userJSON);
     var creator = userObj._id;
@@ -444,7 +460,7 @@ function creaPlaylist() {
     };
 
     // Send playlist creation request to the server
-    fetch("http://127.0.0.1:3100/playlist/?apikey=123456", {
+    fetch("https://tune-hub.it:443/playlist/?apikey=123456", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -472,11 +488,11 @@ function creaPlaylist() {
 
 // Retrieve and display public playlists for the home page
 function playlistPubblicheHome() {
-    const userJSON = sessionStorage.getItem("user");
-    const userObj = JSON.parse(userJSON);
+    /*const userJSON = sessionStorage.getItem("user");
+    const userObj = JSON.parse(userJSON);*/
 
     // Fetch playlists from the server
-    fetch(`http://127.0.0.1:3100/playlist/?apikey=123456`, {
+    fetch(`https://tune-hub.it:443/playlist/?apikey=123456`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -508,7 +524,7 @@ function playlistPubblicheHome() {
 
 // Fetch user information for a playlist item
 function getUserInfoForPlay(user_id, playlistItem) {
-    return fetch(`http://127.0.0.1:3100/users/${user_id}?apikey=123456`, {
+    return fetch(`https://tune-hub.it:443/users/${user_id}?apikey=123456`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -523,7 +539,7 @@ function getUserInfoForPlay(user_id, playlistItem) {
             }
         })
         .then(user => {
-            playlistItem.creator = user[0].name;                            // Assuming the email is in user.email
+            playlistItem.creator = user[0].name;                            // us name instead of object id 
         })
         .catch(error => {
             alert(error);
@@ -548,7 +564,7 @@ function mostraPlaylistPubliche(films) {
         clone.id = "card-film-" + i;
         clone.onclick = function (i) {
             return function () {
-                showSongs(films[i]);
+                showSongsPub(films[i]);
             };
         }(i);
 
@@ -574,6 +590,12 @@ function mostraPlaylistPubliche(films) {
             likeElement.src = "img/heart.png";
         }
 
+        if (films[i].like && films[i].like.length > 0) {
+            clone.getElementsByClassName('total_like')[0].innerHTML = films[i].like.length;
+        } else {
+            clone.getElementsByClassName('total_like')[0].innerHTML = '0';
+        }
+
         // Attach click event for liking/unliking a playlist
         likeElement.onclick = function (i) {
             return function () {
@@ -594,7 +616,7 @@ function getPlaylistUser() {
     const userJSON = sessionStorage.getItem("user");
     const userObj = JSON.parse(userJSON);
 
-    fetch(`http://127.0.0.1:3100/playlist/${userObj._id}?apikey=123456`, {
+    fetch(`https://tune-hub.it:443/playlist/${userObj._id}?apikey=123456`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -620,7 +642,7 @@ function getUserPlaylist() {
     const userJSON = sessionStorage.getItem("user");
     const userObj = JSON.parse(userJSON);
 
-    fetch(`http://127.0.0.1:3100/playlist/${userObj._id}?apikey=123456`, {
+    fetch(`https://tune-hub.it:443/playlist/${userObj._id}?apikey=123456`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -654,6 +676,7 @@ function mostraMyPlaylist(films) {
         clone.id = 'card-film-' + i;
         clone.onclick = function (i) {
             return function () {
+
                 showSongs(films[i]);
             };
         }(i);
@@ -677,7 +700,7 @@ function mostraMyPlaylist(films) {
 
 // Fetch playlist details by ID
 function getPlaylist(id) {
-    fetch(`http://127.0.0.1:3100/playlist/${id}/info?apikey=123456`, {
+    fetch(`https://tune-hub.it:443/playlist/${id}/info?apikey=123456`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -724,9 +747,9 @@ function addItemsToDropdown(items) {
 
 // Add a song to a playlist
 function addSong(playlist) {
-    var id = document.getElementById("id").innerHTML;
+    var id = document.getElementById("id").innerHTML;                               //song id
     var data = { song: id };
-    fetch(`http://127.0.0.1:3100/playlist/${playlist}/song?apikey=123456`, {
+    fetch(`https://tune-hub.it:443/playlist/${playlist}/song?apikey=123456`, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json",
@@ -760,11 +783,14 @@ function showSongs(play) {
     document.getElementById("card-tag").innerHTML = "#" + play.tag.join(' #');
     document.getElementById("card-public").innerHTML = play.pubblica ? "Public" : "Private";
 
-    if (play.song) {
+    if (play.song && play.song.length > 0) {
         for (var i = 0; i < play.song.length; i++) {
             searchTrackById(play.song[i]);
         }
+    } else {
+        removeLoader();
     }
+
 }
 
 // Fetch track details by ID
@@ -782,6 +808,7 @@ function searchTrackById(trackId) {
                 });
             } else {
                 const data = await response.json();
+                console.log(data)
                 // add the data to the table row
                 addTableRows(data);
             }
@@ -854,7 +881,7 @@ function removeSong(songId) {
     var id = document.getElementById("id").innerHTML;
 
     //send delete request to the server with id of the playlist and song id
-    fetch(`http://127.0.0.1:3100/playlist/${id}/${songId}?apikey=123456`, {
+    fetch(`https://tune-hub.it:443/playlist/${id}/${songId}?apikey=123456`, {
         method: "DELETE",
         headers: {
             "Content-Type": "application/json",
@@ -881,7 +908,7 @@ function deleteUser() {
     const userJSON = sessionStorage.getItem("user");
     const userObj = JSON.parse(userJSON);
 
-    fetch(`http://127.0.0.1:3100/users/${userObj._id}?apikey=123456`, {
+    fetch(`https://tune-hub.it:443/users/${userObj._id}?apikey=123456`, {
         method: "DELETE",
         headers: {
             "Content-Type": "application/json",
@@ -907,7 +934,7 @@ function deleteUser() {
 function deletePlaylist() {
     var id = document.getElementById("id").innerHTML;
 
-    fetch(`http://127.0.0.1:3100/playlist/${id}?apikey=123456`, {
+    fetch(`https://tune-hub.it:443/playlist/${id}?apikey=123456`, {
         method: "DELETE",
         headers: {
             "Content-Type": "application/json",
@@ -949,8 +976,9 @@ function updatePlaylist() {
     if (titolo.value === "") {
         // Get the second part of card-titolo content and set it as the value
         var cardTitoloContent = document.getElementById("card-titolo").innerHTML;
-        var splitArray = cardTitoloContent.split(" ");
+        var splitArray = cardTitoloContent.split(":");
         var secondPart = splitArray[1];
+        secondPart = secondPart.trim(); // Assign the trimmed value back to secondPart
         titolo.value = secondPart;
     }
 
@@ -980,7 +1008,7 @@ function updatePlaylist() {
     };
 
     // use put method to update the playlist
-    fetch(`http://127.0.0.1:3100/playlist/${id}?apikey=123456`, {
+    fetch(`https://tune-hub.it:443/playlist/${id}?apikey=123456`, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json",
@@ -1114,7 +1142,7 @@ function addArtist() {
     var artist = {
         artist: document.getElementById("artist").value
     };
-    fetch(`http://127.0.0.1:3100/users/${userObj._id}/artist?apikey=123456`, {
+    fetch(`https://tune-hub.it:443/users/${userObj._id}/artist?apikey=123456`, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json",
@@ -1141,7 +1169,7 @@ function addGenere() {
 
     var genre = { generi: checkAllCheckboxes() };               //array of genres
 
-    fetch(`http://127.0.0.1:3100/users/${userObj._id}/genere?apikey=123456`, {
+    fetch(`https://tune-hub.it:443/users/${userObj._id}/genere?apikey=123456`, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json",
@@ -1149,16 +1177,17 @@ function addGenere() {
         body: JSON.stringify(genre)
     })
         .then((response) => {
+            console.log(response)
             if (response.status == 401) {
                 window.location.href = 'login.html';
                 throw new Error('Token scaduto, rieffettuare il login');
+            } else if (response.status == 200) {
+                window.location.reload();
             }
             return response.text();
         })
-        .then(() => {
-            window.location.reload();
-        })
         .catch((error) => alert(error));
+
 }
 
 // Function to add badges to a container based on an array
@@ -1184,7 +1213,7 @@ async function getUserInfo() {
     const userObj = JSON.parse(userJSON);
 
     try {
-        const response = await fetch(`http://127.0.0.1:3100/users/${userObj._id}?apikey=123456`, {
+        const response = await fetch(`https://tune-hub.it:443/users/${userObj._id}?apikey=123456`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -1219,7 +1248,7 @@ async function removeGenere(genere) {
     const userJSON = sessionStorage.getItem("user");
     const userObj = JSON.parse(userJSON);
     var body = { generi: genere };
-    fetch(`http://127.0.0.1:3100/users/${userObj._id}/genere?apikey=123456`, {
+    fetch(`https://tune-hub.it:443/users/${userObj._id}/genere?apikey=123456`, {
         method: "DELETE",
         headers: {
             "Content-Type": "application/json",
@@ -1249,7 +1278,7 @@ async function removeArtist(artist) {
     const userJSON = sessionStorage.getItem("user");
     const userObj = JSON.parse(userJSON);
     var body = { artist: artist };
-    fetch(`http://127.0.0.1:3100/users/${userObj._id}/artist?apikey=123456`, {
+    fetch(`https://tune-hub.it:443/users/${userObj._id}/artist?apikey=123456`, {
         method: "DELETE",
         headers: {
             "Content-Type": "application/json",
@@ -1274,7 +1303,7 @@ function likePlaylist(playlistID) {
     const userJSON = sessionStorage.getItem("user");
     const userObj = JSON.parse(userJSON);
     var body = { like: userObj._id };
-    fetch(`http://127.0.0.1:3100/like/${playlistID}?apikey=123456`, {
+    fetch(`https://tune-hub.it:443/like/${playlistID}?apikey=123456`, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json",
@@ -1301,11 +1330,9 @@ async function searchInPlaylist() {
         var playlist = playlistPub[i];
         document.getElementById("card-film-" + i).classList.add("d-none");
 
-        if (playlist.tag && playlist.tag.some(tag => tag.toLowerCase().startsWith(searchString.toLowerCase()))) 
-        { 
+        if (playlist.tag && playlist.tag.some(tag => tag.toLowerCase().startsWith(searchString.toLowerCase()))) {
             document.getElementById("card-film-" + i).classList.remove("d-none");
-        } else if (playlist.title.toLowerCase().startsWith(searchString.toLowerCase())) 
-        {
+        } else if (playlist.title.toLowerCase().startsWith(searchString.toLowerCase())) {
             document.getElementById("card-film-" + i).classList.remove("d-none");
         } else {
             if (playlist.song) {
@@ -1356,4 +1383,91 @@ function searchSong(trackId) {
                 reject(error);
             });
     });
+}
+
+function showSongsPub(play) {
+    addLoader();
+    document.getElementById("showplaylist").classList.remove("d-none");
+    document.getElementById("consegna").classList.add("d-none");
+    document.getElementById("container-film").classList.add("d-none");
+    document.getElementById("card-titolo").innerHTML = "Title : " + play.title;
+    document.getElementById("id").innerHTML = play._id;
+    document.getElementById("card-des").innerHTML = "Descrption : " + play.description;
+    document.getElementById("card-tag").innerHTML = "#" + play.tag.join(' #');
+    document.getElementById("card-public").innerHTML = play.pubblica ? "Public" : "Private";
+
+    if (play.song && play.song.length > 0) {
+        for (var i = 0; i < play.song.length; i++) {
+            searchTrackByIdPub(play.song[i]);
+        }
+    } else {
+        removeLoader();
+    }
+
+}
+
+// Fetch track details by ID
+function searchTrackByIdPub(trackId) {
+    fetch(`${BASE}tracks/${trackId}`, {
+        headers: {
+            "Authorization": "Bearer " + sessionStorage.getItem("access"),
+        },
+    })
+        .then(async response => {
+            if (!response.ok) {
+                // If not OK, refresh the token and reload the page
+                getToken().then(() => {
+                    window.location.reload();
+                });
+            } else {
+                const data = await response.json();
+
+                // add the data to the table row
+                addTableRowsPub(data);
+            }
+        });
+}
+
+// Add table rows for a track to the songs table
+function addTableRowsPub(dataArray) {
+    const table = document.getElementById('songs');
+    let seconds = Math.floor(dataArray.duration_ms / 1000);
+
+    // Calculate minutes and remaining seconds
+    let minutes = Math.floor(seconds / 60);
+    seconds = seconds % 60;
+
+    // Format the result
+    let formattedDuration = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+    const newRow = table.insertRow();
+
+    // Create cells and set class names
+    const imgCell = newRow.insertCell(0);
+    imgCell.innerHTML = `<img src="${dataArray.album.images[0].url}" height="50px" alt="">`;
+
+    const nameCell = newRow.insertCell(1);
+    nameCell.innerHTML = `<h7 class="my-2">${dataArray.name}</h7>`;
+
+    const artCell = newRow.insertCell(2);
+    artCell.innerHTML = `<h7 class="my-2">${dataArray.artists[0].name}</h7>`;
+
+    const albCell = newRow.insertCell(3);
+    albCell.innerHTML = `<h7 class="my-2">${dataArray.album.name}</h7>`;
+
+    const durCell = newRow.insertCell(4);
+    durCell.innerHTML = `<h7 class="my-2">${formattedDuration}</h7>`;
+
+    if (dataArray.preview_url !== null) {
+        const playCell = newRow.insertCell(5);
+        playCell.innerHTML = `<img src="img/play.png" id="img-${dataArray.id}" onclick="togglePlayPause('${dataArray.id}')" height="40px" alt="">
+            <audio id="${dataArray.id}" controls class="d-none" src="${dataArray.preview_url}">
+            </audio>`;
+        const removeCell = newRow.insertCell(6);
+        removeCell.innerHTML = `<img src="img/remove.png" alt="" height="50px" onclick="removeSong('${dataArray.id}')">`;
+    } else {
+        const playCell = newRow.insertCell(5);
+        playCell.innerHTML = `<img src="img/no-music.png" id="img-${dataArray.id}"  height="40px" alt="">`;
+    }
+    removeLoader();                                 // removes the loader element
 }

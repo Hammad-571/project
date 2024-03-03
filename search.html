@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Spotify</title>
+  <title>Tune-Hub</title><link rel="icon" href="img/logo.png" type="image/png">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-aFq/bzH65dt+w6FI2ooMVUpc+21e0SRygnTpmBvdBgSdnuTN7QbdgL+OapgHtvPp" crossorigin="anonymous">
   <link rel="stylesheet" href="style/style.css">
@@ -14,7 +14,7 @@
   <!--Navbar-->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark ms-5 mt-2">
     <div class="container-fluid">
-      <a class="navbar-brand" href="#"><img src="img/logo.png" alt="logo" width="200px"></a>
+      <a class="navbar-brand" href="#"><img src="img/logo.png" alt="logo" width="150px"></a>
 
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav">
@@ -22,16 +22,16 @@
             <a class="nav-link active" aria-current="page" href="index.html">Home</a>
           </li>
           <li class="nav-item ps-2">
-            <a class="nav-link" href="search.html">Serach</a>
+            <a class="nav-link" href="search.html">Search</a>
           </li>
           <li class="nav-item ps-2">
             <a class="nav-link" href="playlist.html">Playlist</a>
           </li>
-          <li class="nav-item ">
-            <div class="container">
-              <div class="row justify-content-end ">
-                <div class="col-lg-2 col-md-3 col-4">
-                  <img src="img/login.png" id="profile" alt="Home" width="100%" onclick="Profile()">
+          <li class="nav-item d-flex justify-content-end">
+            <div class="container d-flex justify-content-end">
+              <div class="row">
+                <div class="col-lg-7 col-8">
+                  <img src="img/login.png" id="profile" alt="Home" width="80%" onclick="Profile()">
                 </div>
               </div>
             </div>
@@ -131,7 +131,7 @@
                   data-bs-toggle="dropdown" aria-expanded="false">
                   add to playlist
                 </button>
-                <button class="btn btn-secondary" type="button" id="sub1" aria-expanded="false" onclick="addSong()">
+                <button class="btn btn-secondary" type="button" id="sub1" aria-expanded="false" >
                   add
                 </button>
                 <ul id="dropdownList" class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
@@ -151,7 +151,9 @@
     integrity="sha384-qKXV1j0HvMUeCBQ+QVp7JcfGl760yU08IQ+GpUo5hlbpg51QRiuqHAJz8+BrxE/N"
     crossorigin="anonymous"></script>
   <script src="lib.js"></script>
-
+  <script>
+    isUserLoggedIn()
+  </script>
 </body>
 
 </html>

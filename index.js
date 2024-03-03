@@ -9,12 +9,41 @@ const express = require('express')
 const path = require('path');
 const uri = "mongodb+srv://hammadahmad571:1h13a4571@pwm.jnfuzra.mongodb.net/?retryWrites=true&w=majority";
 const app = express()
+const https = require('https');
+const fs = require('fs');
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use(cors())
 // app.use(auth) Per avere apikey su tutti gli endpoint
 app.use(express.json())
+
+const options = {
+    // Your SSL key and certificate paths
+    key: fs.readFileSync('key/privatekey.pem'),
+    cert: fs.readFileSync('key/cert.pem'),
+};
+
+const server = https.createServer(options, app);
+
+const PORT = 443;
+
+app.use(express.static(path.join(__dirname)));
+
+app.get('/', function (req, res) {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+server.listen(PORT, () => {
+    console.log(`Server running at https://localhost:${PORT}/`);
+});
+
+//const path = require('path');
+app.use(express.static(path.join(__dirname)))
+
+app.get('/', function (req, res) {
+    res.sendFile(path.join(__dirname, '/index.html'));
+});
 
 //convert the text into the hash MD5
 function hash(input) {
@@ -350,7 +379,7 @@ async function updatePlaylist(res, id, playlist) {
     try {
         var pwmClient = await new mongoClient(uri).connect()
         var filter = { "_id": new ObjectId(id) }
-        var playlistToIn = { $set: playlist }                        //update the playlist
+        var playlistToIn = { $set: playlist }                                                               //update the playlist
         var item = await pwmClient.db("pwm").collection('playlist').updateOne(filter, playlistToIn)         //find the playlist and update it 
         res.send(item)
     } catch (e) {
@@ -409,18 +438,17 @@ async function loginUser(res, login) {
     }
 }
 
-//update the genre that user like  
-app.put('/users/:id/genere', auth, function (req, res) {
-
+//update the genre that user
+app.put('/users/:id/genere', auth, async function (req, res) {
     var genresArray = req.body.generi;
 
-    //for each genre selected by the user add call function addGenere
-    genresArray.forEach(function (genre) {
-        var gen = {
-            generi: genre
-        }
-        addGenere(res, req.params.id, gen);
-    });
+    try {
+        // Use the function to handle genre addition
+        await addGenere(res, req.params.id, genresArray);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send(`Error: ${error.message}`);
+    }
 })
 
 //remove un genre from user
@@ -439,36 +467,48 @@ app.delete('/users/:id/artist', auth, function (req, res) {
 })
 
 //add the genre to the user
-async function addGenere(res, id, genereParam) {
-    //check the genre
-    if (genereParam.generi === '') {
-        res.status(400).send('Manca il genere da aggiungere')
-        return
-    }
+async function addGenere(res, id, genresArray) {
+    // Keep track of whether any genre failed to be added
+    let allGenresAdded = true;
 
-    try {
-        var pwmClient = await new mongoClient(uri).connect()
-        var filter = { "_id": new ObjectId(id) }
-        var Gen = { $addToSet: genereParam }                                //add the genre to the array
-        //update the user by adding the genre
-        var result = await pwmClient.db("pwm")
-            .collection('users')
-            .updateOne(filter, Gen)
-        if (result.modifiedCount === 0) {
-            res.status(400).send("Genre already present ");
-            return
+    // Use Promise.all to await all async calls and handle them together
+    await Promise.all(genresArray.map(async function (genre) {
+        var gen = {
+            generi: genre
+        };
+
+        // Check the genre and update the allGenresAdded flag
+        if (gen.generi === '') {
+            allGenresAdded = false;
         } else {
-            res.status(200).send("Gender added");
-            return
-        }
+            try {
+                var pwmClient = await new mongoClient(uri).connect();
+                var filter = { "_id": new ObjectId(id) };
+                var Gen = { $addToSet: gen }; // Add the genre to the array
 
-    } catch (e) {
-        if (e.code == 11000) {
-            res.status(400).send("Genre already present")
-            return
+                // Update the user by adding the genre
+                var result = await pwmClient.db("pwm")
+                    .collection('users')
+                    .updateOne(filter, Gen);
+
+                // Check if the genre was already present
+                if (result.modifiedCount === 0) {
+                    allGenresAdded = false;
+                }
+            } catch (e) {
+                // Handle errors if needed
+                console.error(e);
+                allGenresAdded = false;
+            }
         }
-        res.status(500).send(`Generic error: ${e}`)
-    };
+    }));
+
+    // Send the response based on the allGenresAdded flag
+    if (allGenresAdded) {
+        res.status(200).send("Genres added");
+    } else {
+        res.status(400).send("One or more genres could not be added");
+    }
 }
 
 //remove the genre
@@ -621,8 +661,15 @@ async function removeLike(res, playlistId, userId) {
         res.status(500).send(`Generic error: ${e}`)
     };
 }
+app.use((req, res, next) => {
+    if (req.secure) {
+        next();
+    } else {
+        res.redirect(`https://${req.headers.host}${req.url}`);
+    }
+});
 
-//listen on the port 3100 and accept the request from every IP
-app.listen(3100, () => {
-    console.log("Server partito porta 3100")
-})
+/*listen on the port 80 and accept the request from every IP
+app.listen(80, () => {
+    console.log("Server partito porta 80")
+})*/
